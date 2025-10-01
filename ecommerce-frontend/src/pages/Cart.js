@@ -1,12 +1,12 @@
-import React from "react";
+// import React from "react";
 
-function Cart() {
-  return (
-    <div>
-      <h1>🛒 السلة</h1>
-      <p>لا توجد منتجات في السلة حاليا.</p>
-    </div>
-  );
-}
+// function Cart() {
+//   return (
+//     <div style={{ padding: "20px", textAlign: "center" }}>
+//       <h1>🚗 قائمة سياراتك</h1>
+//       <p>لا توجد سيارات في القائمة حاليا.</p>
+//     </div>
+//   );
+// }
 
-export default Cart;
+// export default Cart;

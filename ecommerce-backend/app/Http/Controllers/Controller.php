@@ -2,17 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Routing\Controller as BaseController;
 
-class ProductController extends Controller
+class Controller extends BaseController
 {
-    public function index()
-    {
-        // مؤقتاً نرجعو بيانات ثابتة
-        return response()->json([
-            ['id' => 1, 'name' => 'Laptop', 'price' => 1200],
-            ['id' => 2, 'name' => 'Phone', 'price' => 800],
-            ['id' => 3, 'name' => 'Headphones', 'price' => 150],
-        ]);
-    }
+    use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 }

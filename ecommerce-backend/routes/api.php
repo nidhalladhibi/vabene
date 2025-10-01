@@ -1,16 +1,25 @@
 <?php
 
+use App\Http\Controllers\CarController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ProductController;
 
-Route::get('/hello', function () {
-    return response()->json(['message' => 'Hello depuis Laravel 🚀']);
+// Authentification
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+
+// Routes protégées (admin)
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::post('/cars', [CarController::class, 'store']);
+    Route::put('/cars/{id}', [CarController::class, 'update']);
+    Route::delete('/cars/{id}', [CarController::class, 'destroy']);
 });
 
-// Use ProductController for products route
-Route::get('/products', [ProductController::class, 'index']);
+// Routes publiques
+Route::get('/cars', [CarController::class, 'index']);
 
+// Route pour récupérer l'utilisateur connecté (optionnel)
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
