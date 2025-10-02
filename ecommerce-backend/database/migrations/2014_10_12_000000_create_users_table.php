@@ -8,20 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('cars', function (Blueprint $table) {
+        Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('model');
-            $table->integer('year');
-            $table->integer('km');
-            $table->decimal('price', 10, 2);
-            $table->string('image')->nullable();
-            $table->string('role')->default('user'); // user ou admin
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->string('role')->default('user'); // 👈 إضافة الحقل role
+            $table->rememberToken();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('cars');
+        Schema::dropIfExists('users');
     }
 };

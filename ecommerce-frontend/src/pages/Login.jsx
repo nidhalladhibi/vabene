@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // ⬅️ مهم
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate(); // ⬅️ استعمل navigate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,11 +24,11 @@ function Login() {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
-      // Rediriger selon rôle
-      if (response.data.user.is_admin) {
-        window.location.href = "/admin"; // admin dashboard
+      // ✅ Rediriger selon le rôle
+      if (response.data.user.role === "admin") {
+        navigate("/admin"); // ⬅️ هذا يخليك تمشي للـ dashboard
       } else {
-        window.location.href = "/"; // page normale
+        navigate("/"); // user عادي
       }
     } catch (err) {
       setError(err.response?.data?.message || "Email ou mot de passe incorrect");

@@ -7,7 +7,8 @@ import Products from "./pages/Products";
 import Cart from "./pages/Cart";
 import CarList from "./components/CarList";
 import Login from "./components/Login";
-import Admin from "./pages/Admin";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminCars from "./pages/AdminCars.jsx";
 
 function App() {
   return (
@@ -18,14 +19,11 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/cars" element={
-            <div className="App">
-              <h1>AutoVista 🚗</h1>
-              <CarList />
-            </div>
-          } />
+          <Route path="/cars" element={<CarList />} /> {/* ✅ تبسيط */}
           <Route path="/login" element={<Login />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin" element={<AdminDashboard />} /> {/* ✅ */}
+          {/* Ajoutez d'autres routes ici */}
+          <Route path="/admin/cars" element={<AdminCars />} /> {/* ✅ */}
         </Routes>
       </div>
       <Footer />

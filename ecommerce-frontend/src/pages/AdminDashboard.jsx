@@ -10,7 +10,7 @@ function AdminDashboard() {
     year: "",
     km: "",
     price: "",
-    image: ""
+    image: null, // رفع الصور
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,31 +19,37 @@ function AdminDashboard() {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+  // ✅ التحقق من صلاحيات الأدمن
   useEffect(() => {
-    // Vérifier si l'utilisateur est admin
-    if (!user.is_admin) {
+    if (user.role !== "admin") {
       window.location.href = "/";
       return;
     }
     fetchCars();
   }, []);
 
+  // جلب كل السيارات
   const fetchCars = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/cars");
+      const response = await axios.get("http://127.0.0.1:8000/api/cars", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setCars(response.data);
     } catch (err) {
       console.error("Erreur:", err);
     }
   };
 
+  // التعامل مع إدخال البيانات
   const handleInputChange = (e) => {
+    const { name, value, files } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: files ? files[0] : value, // لو input file ناخذ أول صورة
     });
   };
 
+  // ✅ إضافة/تعديل سيارة
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -51,26 +57,35 @@ function AdminDashboard() {
     setSuccess("");
 
     try {
+      const data = new FormData();
+      data.append("model", formData.model);
+      data.append("year", formData.year);
+      data.append("km", formData.km);
+      data.append("price", formData.price);
+      if (formData.image) data.append("image", formData.image);
+
       if (editingCar) {
-        // Mise à jour
-        await axios.put(
-          `http://127.0.0.1:8000/api/cars/${editingCar.id}`,
-          formData,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-        setSuccess("Voiture mise à jour avec succès !");
-      } else {
-        // Création
+        // تعديل سيارة
         await axios.post(
-          "http://127.0.0.1:8000/api/cars",
-          formData,
+          `http://127.0.0.1:8000/api/cars/${editingCar.id}?_method=PUT`,
+          data,
           {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
           }
         );
-        setSuccess("Voiture ajoutée avec succès !");
+        setSuccess("🚗 Voiture mise à jour avec succès !");
+      } else {
+        // إضافة سيارة
+        await axios.post("http://127.0.0.1:8000/api/cars", data, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        setSuccess("🚗 Voiture ajoutée avec succès !");
       }
 
       fetchCars();
@@ -89,21 +104,19 @@ function AdminDashboard() {
       year: car.year,
       km: car.km,
       price: car.price,
-      image: car.image
+      image: null, // لازم نرفع صورة جديدة
     });
     setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette voiture ?")) {
-      return;
-    }
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette voiture ?")) return;
 
     try {
       await axios.delete(`http://127.0.0.1:8000/api/cars/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setSuccess("Voiture supprimée avec succès !");
+      setSuccess("🚗 Voiture supprimée avec succès !");
       fetchCars();
     } catch (err) {
       setError("Erreur lors de la suppression");
@@ -117,7 +130,7 @@ function AdminDashboard() {
       year: "",
       km: "",
       price: "",
-      image: ""
+      image: null,
     });
     setShowModal(true);
   };
@@ -134,7 +147,7 @@ function AdminDashboard() {
     window.location.href = "/login";
   };
 
-  if (!user.is_admin) {
+  if (user.role !== "admin") {
     return null;
   }
 
@@ -142,16 +155,14 @@ function AdminDashboard() {
     <div className="container-fluid" style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
       {/* Header */}
       <div className="bg-primary text-white py-3 mb-4">
-        <div className="container">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h2 className="mb-0">🚗 Admin Dashboard - AutoVista</h2>
-              <small>Bienvenue, {user.name}</small>
-            </div>
-            <button onClick={handleLogout} className="btn btn-light">
-              Déconnexion
-            </button>
+        <div className="container d-flex justify-content-between align-items-center">
+          <div>
+            <h2 className="mb-0">🚗 Admin Dashboard - AutoVista</h2>
+            <small>Bienvenue, {user.name}</small>
           </div>
+          <button onClick={handleLogout} className="btn btn-light">
+            Déconnexion
+          </button>
         </div>
       </div>
 
@@ -160,33 +171,24 @@ function AdminDashboard() {
         {success && (
           <div className="alert alert-success alert-dismissible fade show">
             {success}
-            <button
-              type="button"
-              className="btn-close"
-              onClick={() => setSuccess("")}
-            ></button>
+            <button type="button" className="btn-close" onClick={() => setSuccess("")}></button>
           </div>
         )}
-
         {error && (
           <div className="alert alert-danger alert-dismissible fade show">
             {error}
-            <button
-              type="button"
-              className="btn-close"
-              onClick={() => setError("")}
-            ></button>
+            <button type="button" className="btn-close" onClick={() => setError("")}></button>
           </div>
         )}
 
-        {/* Bouton Ajouter */}
+        {/* Ajouter */}
         <div className="mb-4">
           <button onClick={openAddModal} className="btn btn-success btn-lg">
             ➕ Ajouter une voiture
           </button>
         </div>
 
-        {/* Tableau des voitures */}
+        {/* Tableau */}
         <div className="card shadow">
           <div className="card-header bg-white">
             <h4 className="mb-0">Liste des voitures ({cars.length})</h4>
@@ -208,39 +210,35 @@ function AdminDashboard() {
                   {cars.map((car) => (
                     <tr key={car.id}>
                       <td>
-                        <img
-                          src={car.image}
-                          alt={car.model}
-                          style={{
-                            width: "80px",
-                            height: "60px",
-                            objectFit: "cover",
-                            borderRadius: "8px"
-                          }}
-                        />
+                        {car.image && (
+                          <img
+                            src={`http://127.0.0.1:8000/storage/${car.image}`}
+                            alt={car.model}
+                            style={{ width: "80px", height: "60px", objectFit: "cover", borderRadius: "8px" }}
+                          />
+                        )}
                       </td>
                       <td className="fw-bold">{car.model}</td>
                       <td>{car.year}</td>
-                      <td>{car.km.toLocaleString()} km</td>
-                      <td className="text-success fw-bold">
-                        {car.price.toLocaleString()} €
-                      </td>
+                      <td>{car.km?.toLocaleString()} km</td>
+                      <td className="text-success fw-bold">{car.price?.toLocaleString()} €</td>
                       <td>
-                        <button
-                          onClick={() => handleEdit(car)}
-                          className="btn btn-sm btn-primary me-2"
-                        >
+                        <button onClick={() => handleEdit(car)} className="btn btn-sm btn-primary me-2">
                           ✏️ Modifier
                         </button>
-                        <button
-                          onClick={() => handleDelete(car.id)}
-                          className="btn btn-sm btn-danger"
-                        >
+                        <button onClick={() => handleDelete(car.id)} className="btn btn-sm btn-danger">
                           🗑️ Supprimer
                         </button>
                       </td>
                     </tr>
                   ))}
+                  {cars.length === 0 && (
+                    <tr>
+                      <td colSpan="6" className="text-center text-muted p-3">
+                        Aucune voiture disponible
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -250,104 +248,41 @@ function AdminDashboard() {
 
       {/* Modal Ajouter/Modifier */}
       {showModal && (
-        <div
-          className="modal d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
+        <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">
-                  {editingCar ? "Modifier la voiture" : "Ajouter une voiture"}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={closeModal}
-                ></button>
+                <h5 className="modal-title">{editingCar ? "Modifier la voiture" : "Ajouter une voiture"}</h5>
+                <button type="button" className="btn-close" onClick={closeModal}></button>
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="modal-body">
                   <div className="mb-3">
                     <label className="form-label">Modèle *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="model"
-                      value={formData.model}
-                      onChange={handleInputChange}
-                      required
-                    />
+                    <input type="text" className="form-control" name="model" value={formData.model} onChange={handleInputChange} required />
                   </div>
-
                   <div className="mb-3">
                     <label className="form-label">Année *</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      name="year"
-                      value={formData.year}
-                      onChange={handleInputChange}
-                      min="1990"
-                      max={new Date().getFullYear() + 1}
-                      required
-                    />
+                    <input type="number" className="form-control" name="year" value={formData.year} onChange={handleInputChange} min="1990" max={new Date().getFullYear() + 1} required />
                   </div>
-
                   <div className="mb-3">
                     <label className="form-label">Kilométrage (km) *</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      name="km"
-                      value={formData.km}
-                      onChange={handleInputChange}
-                      min="0"
-                      required
-                    />
+                    <input type="number" className="form-control" name="km" value={formData.km} onChange={handleInputChange} min="0" required />
                   </div>
-
                   <div className="mb-3">
                     <label className="form-label">Prix (€) *</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="0.01"
-                      required
-                    />
+                    <input type="number" className="form-control" name="price" value={formData.price} onChange={handleInputChange} min="0" step="0.01" required />
                   </div>
-
                   <div className="mb-3">
-                    <label className="form-label">URL de l'image *</label>
-                    <input
-                      type="url"
-                      className="form-control"
-                      name="image"
-                      value={formData.image}
-                      onChange={handleInputChange}
-                      placeholder="https://..."
-                      required
-                    />
+                    <label className="form-label">Image *</label>
+                    <input type="file" className="form-control" name="image" onChange={handleInputChange} accept="image/*" />
                   </div>
                 </div>
-
                 <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={closeModal}
-                  >
+                  <button type="button" className="btn btn-secondary" onClick={closeModal}>
                     Annuler
                   </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={loading}
-                  >
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? "En cours..." : editingCar ? "Modifier" : "Ajouter"}
                   </button>
                 </div>
